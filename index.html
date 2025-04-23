@@ -113,6 +113,9 @@
       0% { transform: scale(1); opacity: 1; }
       100% { transform: scale(0); opacity: 0; }
     }
+    .shield {
+      box-shadow: 0 0 20px 5px rgba(0, 255, 255, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -183,7 +186,8 @@
         x: x,
         y: y,
         dx: Math.random() * 2 - 1,
-        dy: Math.random() * 2 - 1
+        dy: Math.random() * 2 - 1,
+        inCombat: false
       };
 
       cells.push(cellObj);
@@ -211,18 +215,25 @@
     }
 
     function checkCellCollision(cell) {
+      if (cell.inCombat) return;
+
       for (let otherCell of cells) {
-        if (cell === otherCell) continue;
+        if (cell === otherCell || otherCell.inCombat) continue;
+
         const cRect = cell.element.getBoundingClientRect();
         const oRect = otherCell.element.getBoundingClientRect();
 
         if (cRect.left < oRect.right && cRect.right > oRect.left && cRect.top < oRect.bottom && cRect.bottom > oRect.top) {
           startCombat(cell, otherCell);
+          break;
         }
       }
     }
 
     function startCombat(cell1, cell2) {
+      cell1.inCombat = true;
+      cell2.inCombat = true;
+
       cell1.element.classList.add('defeat-animation');
       cell2.element.classList.add('victory-animation');
 
@@ -243,12 +254,27 @@
         if (cell2.life <= 0) removeCell(cell2);
 
         updateCrown();
+
+        cell1.element.classList.remove('defeat-animation');
+        cell2.element.classList.remove('victory-animation');
+
+        applyShield(cell1);
+        applyShield(cell2);
+
       }, 800);
     }
 
+    function applyShield(cell) {
+      cell.element.classList.add('shield');
+      setTimeout(() => {
+        cell.inCombat = false;
+        cell.element.classList.remove('shield');
+      }, 3000);
+    }
+
     function ejectCells(cell1, cell2) {
-      const angle1 = Math.random() * 180;
-      const angle2 = angle1 + 180;
+      const angle1 = Math.random() * 2 * Math.PI;
+      const angle2 = angle1 + Math.PI;
       const distance = 100;
 
       const x1 = Math.cos(angle1) * distance;
@@ -257,16 +283,11 @@
       const y2 = Math.sin(angle2) * distance;
 
       setTimeout(() => {
-        const newX1 = parseFloat(cell1.element.style.left) + x1;
-        const newY1 = parseFloat(cell1.element.style.top) + y1;
-        const newX2 = parseFloat(cell2.element.style.left) + x2;
-        const newY2 = parseFloat(cell2.element.style.top) + y2;
+        cell1.element.style.left = `${Math.max(0, Math.min(parseFloat(cell1.element.style.left) + x1, window.innerWidth - 60))}px`;
+        cell1.element.style.top = `${Math.max(0, Math.min(parseFloat(cell1.element.style.top) + y1, window.innerHeight - 60))}px`;
 
-        cell1.element.style.left = `${Math.max(0, Math.min(newX1, window.innerWidth - 60))}px`;
-        cell1.element.style.top = `${Math.max(0, Math.min(newY1, window.innerHeight - 60))}px`;
-
-        cell2.element.style.left = `${Math.max(0, Math.min(newX2, window.innerWidth - 60))}px`;
-        cell2.element.style.top = `${Math.max(0, Math.min(newY2, window.innerHeight - 60))}px`;
+        cell2.element.style.left = `${Math.max(0, Math.min(parseFloat(cell2.element.style.left) + x2, window.innerWidth - 60))}px`;
+        cell2.element.style.top = `${Math.max(0, Math.min(parseFloat(cell2.element.style.top) + y2, window.innerHeight - 60))}px`;
       }, 1000);
     }
 
