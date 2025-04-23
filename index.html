@@ -117,17 +117,25 @@
       box-shadow: 0 0 20px 5px rgba(0, 255, 255, 0.5);
     }
     .background-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-15deg);
-  font-size: 100px;
-  color: rgba(255, 255, 255, 0.03);
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  z-index: 0;
-}
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-15deg);
+      font-size: 100px;
+      color: rgba(255, 255, 255, 0.03);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+    .sword {
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      font-size: 30px;
+      display: none;
+      color: #ffcc00;
+    }
   </style>
 </head>
 <body>
@@ -137,7 +145,7 @@
       <button onclick="generateCell()">Générer Cellule</button>
       <button onclick="resetGame()">Réinitialiser</button>
       <label for="speedRange">Vitesse des cellules</label>
-      <input type="range" id="speedRange" min="0.1" max="3" value="1" step="0.1">
+      <input type="range" id="speedRange" min="0.1" max="20" value="1" step="0.1">
       <div id="status">Cellules actives : <span id="cellCount">0</span></div>
     </div>
   </div>
@@ -164,7 +172,7 @@
       const color = `rgb(${value}, ${value}, ${value})`;
       cellObj.element.style.backgroundColor = color;
       cellObj.textElement.textContent = cellObj.life;
-      cellObj.textElement.style.color = value > 128 ? '#000' : '#fff';
+      cellObj.textElement.style.color = value > 5 ? '#000' : '#fff';
     }
 
     function updateCellCount() {
@@ -185,6 +193,11 @@
       crown.textContent = '👑';
       cell.appendChild(crown);
 
+      const sword = document.createElement('div');
+      sword.classList.add('sword');
+      sword.textContent = '⚔️';
+      cell.appendChild(sword);
+
       const lifeText = document.createElement('div');
       lifeText.textContent = "1";
       cell.appendChild(lifeText);
@@ -196,6 +209,7 @@
         textElement: lifeText,
         life: 1,
         crown: crown,
+        sword: sword,
         x: x,
         y: y,
         dx: Math.random() * 2 - 1,
@@ -250,6 +264,9 @@
       cell1.element.classList.add('defeat-animation');
       cell2.element.classList.add('victory-animation');
 
+      cell1.sword.style.display = 'block';
+      cell2.sword.style.display = 'block';
+
       setTimeout(() => {
         if (cell1.life > cell2.life) {
           cell1.life += 1;
@@ -274,21 +291,32 @@
         applyShield(cell1);
         applyShield(cell2);
 
+        setTimeout(() => {
+          cell1.sword.style.display = 'none';
+          cell2.sword.style.display = 'none';
+        }, 1000);
+
       }, 800);
     }
 
     function applyShield(cell) {
       cell.element.classList.add('shield');
+      const shieldSymbol = document.createElement('div');
+      shieldSymbol.classList.add('shield-symbol');
+      shieldSymbol.textContent = '🛡️';
+      cell.element.appendChild(shieldSymbol);
+
       setTimeout(() => {
         cell.inCombat = false;
         cell.element.classList.remove('shield');
+        shieldSymbol.remove();
       }, 3000);
     }
 
     function ejectCells(cell1, cell2) {
       const angle1 = Math.random() * 2 * Math.PI;
       const angle2 = angle1 + Math.PI;
-      const distance = 100;
+      const distance = 300;
 
       const x1 = Math.cos(angle1) * distance;
       const y1 = Math.sin(angle1) * distance;
@@ -304,19 +332,19 @@
       }, 1000);
     }
 
-    function removeCell(cellObj) {
-      cellObj.element.classList.add('death-animation');
-      cells = cells.filter(c => c !== cellObj);
-      updateCellCount();
+    function removeCell(cell) {
+      cell.element.classList.add('death-animation');
       setTimeout(() => {
-        cellObj.element.remove();
+        cell.element.remove();
+        cells = cells.filter(c => c !== cell);
+        updateCellCount();
       }, 1000);
     }
 
     function resetGame() {
-      for (let cell of cells) {
+      cells.forEach(cell => {
         cell.element.remove();
-      }
+      });
       cells = [];
       updateCellCount();
     }
